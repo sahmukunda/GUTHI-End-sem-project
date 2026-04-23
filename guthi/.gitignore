@@ -1,0 +1,4 @@
+.env
+
+# Local Mongo export (share with friend via Drive/USB, or git add -f only if tiny + non-sensitive)
+mongo-snapshots/

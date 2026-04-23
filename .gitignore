@@ -1,0 +1,42 @@
+# --- Secrets & local overrides (never commit) ---
+.env
+.env.*
+!.env.example
+
+# --- MongoDB BSON dumps / local exports ---
+mongo-snapshots/
+**/mongo-snapshots/
+
+# --- Node (frontend) ---
+**/node_modules/
+guthi-frontend/dist/
+guthi-frontend/.vite/
+*.local
+
+# --- Maven / Java (backend) ---
+guthi/target/
+**/*.class
+hs_err_pid*
+replay_pid*
+
+# --- IDE & editor ---
+.idea/
+*.iml
+.cursor/
+.vscode/
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Logs ---
+*.log
+
+# --- Personal / machine-local (not part of this repo) ---
+New folder/
+
+# --- Editor backups ---
+*~
+*.swp
+*.swo

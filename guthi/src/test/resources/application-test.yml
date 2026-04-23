@@ -1,0 +1,16 @@
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/guthi_test}
+      auto-index-creation: true
+
+guthi:
+  jwt:
+    secret: test-secret-key-for-jwt-signing-at-least-32-chars
+    expiration: 3600000
+  member-invite:
+    enabled: true
+    code: test-invite-code
+  # Avoid PhonePe merchant requirement during integration tests (GET /api/donations/qr).
+  phonepe:
+    enabled: false

@@ -1,0 +1,24 @@
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/guthi}
+      auto-index-creation: true
+
+guthi:
+  member-invite:
+    enabled: true
+    code: guthi-local-member-2026
+
+  # Real payment QR for local dev (pick one):
+  #
+  # A) PhonePe UAT DQR — see docs/PAYMENT-QR.md
+  # phonepe:
+  #   enabled: true
+  #   merchant-id: "..."
+  #   salt-key: "..."
+  #   salt-index: "1"
+  #   store-id: "guthi-local-store"
+  #
+  # B) Your own UPI (no PhonePe) — QR is upi://pay?pa=…&am=…
+  # donation:
+  #   offline-payee-upi: "yourname@oksbi"

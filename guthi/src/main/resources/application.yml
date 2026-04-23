@@ -1,0 +1,35 @@
+# Full payment QR setup (PhonePe DQR vs offline UPI): see docs/PAYMENT-QR.md
+spring:
+  profiles:
+    active: dev
+
+guthi:
+  jwt:
+    secret: guthi-secret-key-change-in-prod-min-256-bits-please-use-env-in-production
+    expiration: 86400000
+
+  # --- Real UPI without PhonePe (local/staging): set your VPA; QR becomes upi://pay?pa=…&am=… ---
+  donation:
+    offline-payee-upi: ""
+
+  # --- Production-style: PhonePe Dynamic QR (https://developer.phonepe.com/offline-integration/dynamic-qr-solution/dqr-init-api) ---
+  # Set enabled: true + merchant fields → QRs use YOUR PhonePe merchant; amount comes from ?amountPaise= (Donate on /u/donations).
+  # Prefer env: GUTHI_PHONEPE_ENABLED, GUTHI_PHONEPE_MERCHANT_ID, GUTHI_PHONEPE_SALT_KEY, GUTHI_PHONEPE_STORE_ID, etc. (see docs/PAYMENT-QR.md)
+  # UAT base-url: https://mercury-uat.phonepe.com/enterprise-sandbox
+  # Prod base-url:  https://mercury-t2.phonepe.com
+  phonepe:
+    enabled: true
+    base-url: https://mercury-uat.phonepe.com/enterprise-sandbox
+    merchant-id: 
+    salt-key: ""
+    salt-index: "1"
+    store-id: ""
+    terminal-id: ""
+    default-expires-seconds: 1800
+    default-amount-paise: 100
+    callback-url: ""
+
+server:
+  port: ${SERVER_PORT:9090}
+  servlet:
+    context-path: /
