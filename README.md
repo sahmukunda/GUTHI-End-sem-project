@@ -52,7 +52,7 @@ Monorepo for a **Nepali Guthi–style community governance** demo: pooled donati
 
 | Concern | Technology |
 |---------|------------|
-| Database | **MongoDB** — typically a **locally installed** `mongod` on `localhost:27017` (see `application-dev.yml`). Optional: `mongo:7` via `guthi/docker-compose.yml`, or **Atlas** / any URI via **`MONGODB_URI`**. |
+| Database | **MongoDB replica set** `rs0` on **`localhost:27018`** (`mongodb://localhost:27018/guthi?replicaSet=rs0` in `application-dev.yml`). Fund and land approval run in a transaction, which MongoDB allows only on a replica set. Override with **`MONGODB_URI`** if you use another host. |
 | Snapshots | **mongodump** / **mongorestore** (MongoDB Database Tools) — see header comments in `guthi/scripts/mongo-dump.ps1` and `mongo-restore.ps1` |
 
 ---
@@ -64,7 +64,7 @@ Monorepo for a **Nepali Guthi–style community governance** demo: pooled donati
 - **Volunteer events**: admin creates events; members sign up; live volunteer lists over WebSocket.
 - **Work posts**: members post help offers; others accept.
 - **Festivals**: calendar-style listings, completion, reviews.
-- **Auth**: separate login flows for community (`/login/user`) and Guthi workspace (`/login/guthi`). There is no public registration. A technician inserts the account into the `users` collection before that person can sign in.
+- **Auth**: separate login flows for community (`/login/user`) and Guthi workspace (`/login/guthi`). There is no public registration. On a fresh database the dev profile seeds the demo roster. Sign in with `admin@guthi.local` / `ChangeMe123!` (Guthi workspace) or `priya@guthi.local` / `ChangeMe123!` (community). The full list is in **`login.md`**.
 
 ---
 
@@ -72,9 +72,9 @@ Monorepo for a **Nepali Guthi–style community governance** demo: pooled donati
 
 - **JDK 17**
 - **Node.js 18+** (or current LTS) and npm
-- **MongoDB** installed and running locally (or any reachable instance); default dev URI: `mongodb://localhost:27017/guthi`
-- **MongoDB Database Tools** on the host (or on `PATH` / **`MONGODB_TOOLS_BIN`**) for `guthi/scripts/mongo-dump.ps1` — the scripts can fall back to Docker **only** if you use Compose for Mongo and Docker is running
-- **Docker**: not required for day-to-day dev if you use local Mongo; optional for CI-style tests (**Testcontainers**) or if you prefer a containerized Mongo instead of a local install
+- **MongoDB** running as replica set **`rs0`** on **`localhost:27018`**. The default dev URI is `mongodb://localhost:27018/guthi?replicaSet=rs0`. A standalone server on port 27017 will not match this URI, and approvals will fail without a replica set.
+- **MongoDB Database Tools** on the host (or on `PATH` / **`MONGODB_TOOLS_BIN`**) only if you want `mongo-dump.ps1` / `mongo-restore.ps1`. Not required to run the app.
+- **Docker**: not required. `guthi/docker-compose.yml` starts a standalone MongoDB on port 27017, which does **not** match the default URI and cannot run the approval transactions.
 
 ---
 
@@ -82,8 +82,8 @@ Monorepo for a **Nepali Guthi–style community governance** demo: pooled donati
 
 ### Backend profiles and YAML
 
-- Default profile in `guthi/src/main/resources/application.yml` is **`dev`** (Mongo URI, seed flags, JWT secret for local use).
-- **`application-dev.yml`**: `spring.data.mongodb.uri` (override with **`MONGODB_URI`**), `guthi.*` (JWT, invites, PhonePe, offline UPI, etc.).
+- Default profile in `guthi/src/main/resources/application.yml` is **`dev`** (JWT secret for local use, and the dev seed).
+- **`application-dev.yml`**: Mongo URI defaults to `mongodb://localhost:27018/guthi?replicaSet=rs0` (override with **`MONGODB_URI`**). Also holds `guthi.*` invite and payment settings.
 - **`application-test.yml`**: test Mongo URI (`guthi_test` by default).
 
 **Production**: set a strong **`guthi.jwt.secret`** (or env equivalent), real Mongo URI, and payment keys only via secure configuration — never commit secrets.
@@ -98,20 +98,33 @@ Monorepo for a **Nepali Guthi–style community governance** demo: pooled donati
 
 > **New machine?** Follow **`SETUP.md`** first to install JDK 17, Node.js, MongoDB, and to run initial `mvnw` / `npm install` steps.
 
-### 1. MongoDB (local install — default for this project)
+### 1. MongoDB replica set (required)
 
-Use your **locally installed** MongoDB (e.g. Windows service or `mongod` from `D:\MongoDB\bin` or Program Files). Start the server so it listens on **`localhost:27017`** (or whatever you set in **`MONGODB_URI`**).
+Install [MongoDB Community Server](https://www.mongodb.com/try/download/community), then start a **single-node replica set** named `rs0` on port **27018**. Do this once per machine. Leave that `mongod` running whenever you start the backend.
 
-The **`guthi`** database does not need to exist beforehand: Spring Data will create collections on first write. You can still create an empty `guthi` database in Compass or `mongosh` if you prefer.
+Create a data folder, then start the server (use your own `dbpath`):
 
-**Docker is not part of the default workflow** here. The repo includes `guthi/docker-compose.yml` only as an **optional** way to run Mongo in a container if you do not use a local `mongod`:
-
-```bash
-cd guthi
-docker compose up -d
+```powershell
+mkdir C:\data\guthi-rs
+mongod --port 27018 --replSet rs0 --dbpath C:\data\guthi-rs --bind_ip localhost
 ```
 
-If you use local Mongo only, skip the compose step entirely.
+```bash
+mkdir -p ~/data/guthi-rs
+mongod --port 27018 --replSet rs0 --dbpath ~/data/guthi-rs --bind_ip localhost
+```
+
+In a second terminal, initiate the set **once**:
+
+```powershell
+mongosh --port 27018 --eval "rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27018'}]})"
+```
+
+`rs.status()` should report the node as `PRIMARY`. Compass can connect to `mongodb://localhost:27018`.
+
+The **`guthi`** database does not need to exist beforehand. On first backend start the dev profile creates the collections and seeds demo users, donations, requests, festivals, and work posts. Later starts skip the seed when donations are already present.
+
+Do **not** use `guthi/docker-compose.yml` for this. It publishes a standalone MongoDB on port 27017.
 
 ### 2. Backend (port **9090** by default)
 
@@ -122,12 +135,9 @@ cd guthi
 mvnw.cmd spring-boot:run
 ```
 
-Active profile **`dev`** loads `application-dev.yml`. Override Mongo:
+Active profile **`dev`** loads `application-dev.yml`, which already points at `localhost:27018`. Set **`MONGODB_URI`** only if your replica set is somewhere else. The URI must include `replicaSet=rs0` (or your set name).
 
-```bash
-set MONGODB_URI=mongodb://localhost:27017/guthi
-mvnw.cmd spring-boot:run
-```
+Wait until the log says the application started and, on a fresh database, `Dev seed complete`.
 
 ### 3. Frontend (port **5173**)
 
@@ -138,6 +148,8 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. With default Vite proxy, the SPA talks to the backend on **9090**.
+
+Sign in with `admin@guthi.local` / `ChangeMe123!` (Guthi workspace) or `priya@guthi.local` / `ChangeMe123!` (community). Every demo password is `ChangeMe123!`. The full roster is in **`login.md`**.
 
 ### 4. Smoke-test API
 

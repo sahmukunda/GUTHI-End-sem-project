@@ -7,11 +7,9 @@ Follow these steps **once** on a clean PC before you run the backend (`mvnw spri
 ## 0. Clone the repository
 
 ```powershell
-git clone <your-repo-url>
-cd Mukund
+git clone https://github.com/sahmukunda/GUTHI-End-sem-project.git
+cd GUTHI-End-sem-project
 ```
-
-(Use the real folder name if yours differs.)
 
 ---
 
@@ -51,29 +49,40 @@ npm -v
 
 ---
 
-## 3. Install and run MongoDB (local)
+## 3. Install MongoDB and start replica set `rs0` on port 27018
 
-This project expects **MongoDB** reachable at **`mongodb://localhost:27017`** by default (database name **`guthi`**).
+The backend connects to **`mongodb://localhost:27018/guthi?replicaSet=rs0`**. A normal standalone server on port 27017 will not connect, and approving a fund or land request needs a replica set because those writes are one MongoDB transaction.
 
-1. Install **MongoDB Community Server** for your OS ([MongoDB download center](https://www.mongodb.com/try/download/community)).
-2. Start **`mongod`** (Windows: run as a service, or start `mongod.exe` with your config so it listens on **port 27017**).
-3. You do **not** have to create the `guthi` database manually; the app creates data on first use.
-
-**Check (optional):**
+1. Install **MongoDB Community Server** ([MongoDB download center](https://www.mongodb.com/try/download/community)). `mongod` and `mongosh` should be on your PATH.
+2. Create a data folder and start the server. Leave this terminal open.
 
 ```powershell
-mongosh
+mkdir C:\data\guthi-rs
+mongod --port 27018 --replSet rs0 --dbpath C:\data\guthi-rs --bind_ip localhost
 ```
 
-Then in the shell: `db.runCommand({ ping: 1 })` — you should get `{ ok: 1 }`. Exit with `exit`.
+Mac or Linux:
 
-If Mongo uses another host/port, set before starting the backend:
+```bash
+mkdir -p ~/data/guthi-rs
+mongod --port 27018 --replSet rs0 --dbpath ~/data/guthi-rs --bind_ip localhost
+```
+
+3. In a **second** terminal, initiate the set once:
 
 ```powershell
-set MONGODB_URI=mongodb://localhost:27017/guthi
+mongosh --port 27018 --eval "rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27018'}]})"
 ```
 
-(PowerShell: `$env:MONGODB_URI = "mongodb://..."`.)
+**Check:** `mongosh --port 27018 --eval "rs.status().ok"` prints `1`.
+
+You do **not** create the `guthi` database yourself. The first backend start seeds demo users and sample data. Sign in with `admin@guthi.local` / `ChangeMe123!` or `priya@guthi.local` / `ChangeMe123!` (full list in **`login.md`**).
+
+If the replica set is not on this host and port, set **`MONGODB_URI`** before starting the backend. It must include the replica-set name, for example:
+
+```powershell
+$env:MONGODB_URI = "mongodb://localhost:27018/guthi?replicaSet=rs0"
+```
 
 ---
 
@@ -150,7 +159,7 @@ The Vite dev server **proxies** `/api`, `/qra`, and `/ws` to **http://localhost:
 |------|------|--------|
 | 1 | JDK 17 | `java -version` |
 | 2 | Node + npm | `node -v`, `npm -v` |
-| 3 | MongoDB | `mongod` listening on 27017 (or set `MONGODB_URI`) |
+| 3 | MongoDB | Replica set `rs0` on port 27018 (`rs.status().ok` is 1) |
 | 4 | (Optional) DB Tools | `mongodump --version` |
 | 5 | Backend deps | `mvnw.cmd dependency:go-offline` in `guthi` |
 | 6 | Frontend deps | `npm install` in `guthi-frontend` |
@@ -167,13 +176,13 @@ The Vite dev server **proxies** `/api`, `/qra`, and `/ws` to **http://localhost:
 | Port **9090** already in use | Stop the other process or set `SERVER_PORT` (see Spring docs). |
 | Port **5173** already in use | Stop other Vite apps or change port in `guthi-frontend/vite.config.ts`. |
 | Frontend loads but API errors / login fails | Ensure backend is running on 9090; check browser Network tab for `/api` calls. |
-| Mongo connection refused | Start `mongod`; confirm URI matches `guthi/src/main/resources/application-dev.yml` or `MONGODB_URI`. |
+| Mongo connection refused, or `replica set` errors | Start `mongod` with `--port 27018 --replSet rs0`, then run `rs.initiate` once. The URI must be `mongodb://localhost:27018/guthi?replicaSet=rs0`. |
 
 ---
 
 ## Docker (optional)
 
-You **do not** need Docker for local Mongo if you installed MongoDB on the machine. Docker is optional (e.g. `guthi/docker-compose.yml` for a containerized Mongo, or Testcontainers in tests when Docker is running).
+You **do not** need Docker. `guthi/docker-compose.yml` starts a standalone MongoDB on port 27017, which does not match the default URI and cannot run approval transactions. Use the replica set in step 3. Docker is still optional for Testcontainers when you run tests.
 
 ---
 
