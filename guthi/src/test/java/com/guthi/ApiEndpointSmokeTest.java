@@ -9,6 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.guthi.enums.Role;
+import com.guthi.repository.UserRepository;
+import com.guthi.support.IssuedAccounts;
 import com.guthi.support.MongoSpringBootTestSupport;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -33,6 +37,8 @@ class ApiEndpointSmokeTest extends MongoSpringBootTestSupport {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     @Test
     void allPrimaryEndpoints_respondAsExpected() throws Exception {
@@ -43,7 +49,7 @@ class ApiEndpointSmokeTest extends MongoSpringBootTestSupport {
         String adminEmail = "smoke-adm-" + id + "@example.com";
 
         // --- Anonymous / permitAll ---
-        mockMvc.perform(get("/api/donations/summary")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/donations/summary")).andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/donations/qr"))
                 .andExpect(status().isOk())
@@ -54,41 +60,19 @@ class ApiEndpointSmokeTest extends MongoSpringBootTestSupport {
         mockMvc.perform(get("/api/volunteer-events")).andExpect(status().isUnauthorized());
 
         // --- Register & login: community users + admin ---
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Smoke User One", user1Email, password, Role.USER);
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Smoke User Two", user2Email, password, Role.USER);
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Smoke Admin", adminEmail, password, Role.ADMIN);
+
         mockMvc.perform(
                         post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         """
-                                        { "fullName": "Smoke User One", "email": "%s", "password": "%s" }
+                                        { "fullName": "Nobody", "email": "new-%s", "password": "%s" }
                                         """
                                                 .formatted(user1Email, password)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists());
-
-        mockMvc.perform(
-                        post("/api/auth/register")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        """
-                                        { "fullName": "Smoke User Two", "email": "%s", "password": "%s" }
-                                        """
-                                                .formatted(user2Email, password)))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(
-                        post("/api/auth/register-guthi-member")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        """
-                                        {
-                                          "fullName": "Smoke Admin",
-                                          "email": "%s",
-                                          "password": "%s",
-                                          "inviteCode": "test-invite-code"
-                                        }
-                                        """
-                                                .formatted(adminEmail, password)))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
 
         String token1 = loginToken(user1Email, password);
         String token2 = loginToken(user2Email, password);

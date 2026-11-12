@@ -42,8 +42,6 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/qra/**")
                                         .permitAll()
-                                        .requestMatchers(HttpMethod.GET, "/api/donations/summary")
-                                        .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/api/donations/qr")
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/api/festivals")

@@ -4,8 +4,6 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { LoginGate } from "./pages/LoginGate";
 import { LoginPage } from "./pages/LoginPage";
 import { AuthLayout } from "./pages/AuthLayout";
-import { RegisterCommunityPage } from "./pages/RegisterCommunityPage";
-import { RegisterGuthiMemberPage } from "./pages/RegisterGuthiMemberPage";
 import { UserLayout } from "./pages/user/UserLayout";
 import { UserHome } from "./pages/user/UserHome";
 import { DonationsPage } from "./pages/user/DonationsPage";
@@ -19,6 +17,7 @@ import { AdminRequestsPage } from "./pages/admin/AdminRequestsPage";
 import { AdminVolunteerPage } from "./pages/admin/AdminVolunteerPage";
 import { AdminFestivalsPage } from "./pages/admin/AdminFestivalsPage";
 import { AdminDonationClaimsPage } from "./pages/admin/AdminDonationClaimsPage";
+import { AdminReportPage } from "./pages/admin/AdminReportPage";
 
 function HomeRedirect() {
   const { auth } = useAuth();
@@ -43,9 +42,8 @@ export default function App() {
       <Route path="/login" element={<AuthLayout><LoginGate /></AuthLayout>} />
       <Route path="/login/user" element={<AuthLayout><LoginPage portal="user" /></AuthLayout>} />
       <Route path="/login/guthi" element={<AuthLayout><LoginPage portal="guthi" /></AuthLayout>} />
-      <Route path="/register" element={<Navigate to="/register/community" replace />} />
-      <Route path="/register/community" element={<AuthLayout><RegisterCommunityPage /></AuthLayout>} />
-      <Route path="/register/guthi" element={<AuthLayout><RegisterGuthiMemberPage /></AuthLayout>} />
+      <Route path="/register" element={<Navigate to="/login" replace />} />
+      <Route path="/register/*" element={<Navigate to="/login" replace />} />
 
       <Route
         path="/u"
@@ -76,6 +74,7 @@ export default function App() {
         <Route path="volunteer" element={<AdminVolunteerPage />} />
         <Route path="festivals" element={<AdminFestivalsPage />} />
         <Route path="donations" element={<AdminDonationClaimsPage />} />
+        <Route path="report" element={<AdminReportPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

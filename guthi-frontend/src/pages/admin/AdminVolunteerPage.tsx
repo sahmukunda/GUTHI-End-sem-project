@@ -170,49 +170,57 @@ export function AdminVolunteerPage() {
         </form>
       </div>
       <h2 className="page__section-title">All events</h2>
-      {events.map((ev) => (
-        <div key={ev.id} className="panel">
-          <p style={{ margin: 0 }}>
-            <strong>{ev.title}</strong> — {new Date(ev.eventDate).toLocaleString()} — signups: {ev.currentSignups}/
-            {ev.volunteersRequired}
-          </p>
-          <div className="btn-row" style={{ marginTop: "0.5rem" }}>
-            <button type="button" className="secondary" onClick={() => setDetailId(ev.id)}>
-              View signups
-            </button>
+      {events.map((ev) => {
+        const open = detailId === ev.id;
+        return (
+          <div key={ev.id} className="panel">
+            <p style={{ margin: 0 }}>
+              <strong>{ev.title}</strong> — {new Date(ev.eventDate).toLocaleString()} — signups: {ev.currentSignups}/
+              {ev.volunteersRequired}
+            </p>
+            {ev.description ? <p className="empty-hint">{ev.description}</p> : null}
+            <div className="btn-row" style={{ marginTop: "0.5rem" }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setDetailId(open ? null : ev.id)}
+              >
+                {open ? "Hide signups" : "View signups"}
+              </button>
+            </div>
+            {open ? (
+              <div style={{ marginTop: "0.85rem" }}>
+                {signups == null ? (
+                  <p className="empty-hint">Loading signups…</p>
+                ) : signups.signups.length === 0 ? (
+                  <p className="empty-hint">No one has signed up yet.</p>
+                ) : (
+                  <div className="table-scroll">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Mobile</th>
+                          <th>Signed up</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {signups.signups.map((s, i) => (
+                          <tr key={`${s.participantName}-${s.mobileNumber}-${i}`}>
+                            <td>{s.participantName || "—"}</td>
+                            <td>{s.mobileNumber || "—"}</td>
+                            <td>{s.signedUpAt ? new Date(s.signedUpAt).toLocaleString() : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
-        </div>
-      ))}
-      {detailId != null && signups ? (
-        <div className="panel panel--emphasis">
-          <h3 className="panel__title">
-            Signups for {events.find((e) => e.id === detailId)?.title ?? "event"} (count: {signups.count})
-          </h3>
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Mobile</th>
-                  <th>Signed up</th>
-                </tr>
-              </thead>
-              <tbody>
-                {signups.signups.map((s, i) => (
-                  <tr key={i}>
-                    <td>{s.participantName}</td>
-                    <td>{s.mobileNumber}</td>
-                    <td>{new Date(s.signedUpAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button type="button" className="secondary" style={{ marginTop: "0.75rem" }} onClick={() => setDetailId(null)}>
-            Close
-          </button>
-        </div>
-      ) : null}
+        );
+      })}
     </div>
   );
 }

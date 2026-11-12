@@ -16,6 +16,7 @@ type Post = {
 
 export function WorkPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [q, setQ] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [mobile, setMobile] = useState("");
@@ -102,7 +103,21 @@ export function WorkPostsPage() {
       </div>
 
       <h2 className="page__section-title">All posts</h2>
-      {posts.map((p) => (
+      <div className="panel">
+        <label htmlFor="work-search">Search posts</label>
+        <input
+          id="work-search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Title, description, or poster"
+        />
+      </div>
+      {posts
+        .filter((p) => {
+          const hay = `${p.title} ${p.description ?? ""} ${p.posterName}`.toLowerCase();
+          return hay.includes(q.trim().toLowerCase());
+        })
+        .map((p) => (
         <div key={p.id} className="panel">
           <h3 style={{ marginTop: 0, marginBottom: "0.35rem" }}>{p.title}</h3>
           <p className="empty-hint">By {p.posterName}</p>

@@ -21,6 +21,8 @@ public class JwtService {
         this.jwtConfig = jwtConfig;
     }
 
+    // ENCAPSULATION: Token creation, parsing, and validation logic centralized in one class
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -72,6 +74,7 @@ public class JwtService {
                 .getPayload();
     }
 
+    // ENCAPSULATION: Private method hides cryptographic key derivation from external callers
     private SecretKey signingKey() {
         byte[] keyBytes = jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length < 32) {

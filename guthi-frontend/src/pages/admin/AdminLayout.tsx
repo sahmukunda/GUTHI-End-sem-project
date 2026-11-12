@@ -40,6 +40,12 @@ export function AdminLayout() {
             Volunteer
           </NavLink>
           <NavLink
+            to="/guthi/report"
+            className={({ isActive }) => `app-nav-link${isActive ? " app-nav-link--active" : ""}`}
+          >
+            Report
+          </NavLink>
+          <NavLink
             to="/guthi/festivals"
             className={({ isActive }) => `app-nav-link${isActive ? " app-nav-link--active" : ""}`}
           >

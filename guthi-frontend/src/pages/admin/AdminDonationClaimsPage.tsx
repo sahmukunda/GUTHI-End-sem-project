@@ -21,6 +21,7 @@ function formatInr(n: number) {
 
 export function AdminDonationClaimsPage() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [q, setQ] = useState("");
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
 
@@ -42,6 +43,9 @@ export function AdminDonationClaimsPage() {
   });
 
   async function approve(row: Row) {
+    if (!window.confirm(`Approve ${row.donorName}'s claim of ₹${formatInr(Number(row.amount))} and add it to the shared pool?`)) {
+      return;
+    }
     setErr("");
     setMsg("");
     try {
@@ -54,6 +58,9 @@ export function AdminDonationClaimsPage() {
   }
 
   async function reject(row: Row) {
+    if (!window.confirm(`Reject ${row.donorName}'s claim? It will not be added to the pool.`)) {
+      return;
+    }
     setErr("");
     setMsg("");
     try {
@@ -76,6 +83,15 @@ export function AdminDonationClaimsPage() {
       </header>
       {err ? <p className="error">{err}</p> : null}
       {msg ? <p className="success">{msg}</p> : null}
+      <div className="panel">
+        <label htmlFor="claim-search">Search claims</label>
+        <input
+          id="claim-search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Donor name, email, or UPI id"
+        />
+      </div>
       <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-scroll">
           <table className="data-table">
@@ -98,7 +114,12 @@ export function AdminDonationClaimsPage() {
                   </td>
                 </tr>
               ) : (
-                rows.map((r) => (
+                rows
+                  .filter((r) => {
+                    const hay = `${r.donorName} ${r.donorEmail} ${r.upiTransactionId}`.toLowerCase();
+                    return hay.includes(q.trim().toLowerCase());
+                  })
+                  .map((r) => (
                   <tr key={r.id}>
                     <td>{r.donorName}</td>
                     <td>{r.donorEmail}</td>

@@ -5,6 +5,7 @@ export const LIVE_TOPICS = {
   adminDonationClaims: "/topic/admin/donation-claims",
   adminRequests: "/topic/admin/requests",
   requestsMyQueue: "/user/queue/requests-my",
+  volunteerCalls: "/user/queue/volunteer-calls",
   volunteerEvents: "/topic/volunteer-events",
   adminVolunteerSignups: "/topic/admin/volunteer-signups",
   workPosts: "/topic/work-posts",

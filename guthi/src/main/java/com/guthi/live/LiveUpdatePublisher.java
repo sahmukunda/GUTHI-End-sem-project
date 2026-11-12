@@ -8,6 +8,7 @@ import com.guthi.dto.response.DonationPersonalBroadcast;
 import com.guthi.dto.response.DonationPoolBroadcast;
 import com.guthi.dto.response.FestivalResponse;
 import com.guthi.dto.response.FestivalReviewsPush;
+import com.guthi.dto.response.VolunteerCallResponse;
 import com.guthi.dto.response.VolunteerEventResponse;
 import com.guthi.dto.response.VolunteerSignupsPush;
 import com.guthi.dto.response.WorkPostResponse;
@@ -29,6 +30,7 @@ public class LiveUpdatePublisher {
     public static final String TOPIC_ADMIN_DONATION_CLAIMS = "/topic/admin/donation-claims";
     public static final String TOPIC_ADMIN_REQUESTS = "/topic/admin/requests";
     public static final String QUEUE_REQUESTS_MY = "/queue/requests-my";
+    public static final String QUEUE_VOLUNTEER_CALLS = "/queue/volunteer-calls";
     public static final String TOPIC_VOLUNTEER_EVENTS = "/topic/volunteer-events";
     public static final String TOPIC_ADMIN_VOLUNTEER_SIGNUPS = "/topic/admin/volunteer-signups";
     public static final String TOPIC_WORK_POSTS = "/topic/work-posts";
@@ -91,6 +93,10 @@ public class LiveUpdatePublisher {
 
     public void publishUserRequestsMy(String userEmail, List<CommunityRequestResponse> rows) {
         safeSendUser(userEmail, QUEUE_REQUESTS_MY, rows);
+    }
+
+    public void publishVolunteerCalls(String userEmail, List<VolunteerCallResponse> rows) {
+        safeSendUser(userEmail, QUEUE_VOLUNTEER_CALLS, rows);
     }
 
     public void publishVolunteerEvents(List<VolunteerEventResponse> rows) {

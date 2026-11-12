@@ -32,6 +32,7 @@ function formatFestivalDate(iso: string) {
 export function FestivalsPage() {
   const { auth } = useAuth();
   const [festivals, setFestivals] = useState<Festival[]>([]);
+  const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [rating, setRating] = useState(5);
@@ -111,8 +112,20 @@ export function FestivalsPage() {
       <div className="festivals-split">
         <div className="panel">
           <h2 className="panel__title">Calendar</h2>
+          <label htmlFor="fest-search">Search festivals</label>
+          <input
+            id="fest-search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Name or description"
+          />
           <ul className="festival-pick-list">
-            {festivals.map((f) => (
+            {festivals
+              .filter((f) => {
+                const hay = `${f.name} ${f.description ?? ""}`.toLowerCase();
+                return hay.includes(q.trim().toLowerCase());
+              })
+              .map((f) => (
               <li key={f.id} className="festival-pick-item">
                 <button
                   type="button"

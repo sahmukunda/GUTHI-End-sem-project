@@ -21,7 +21,7 @@ class AuthRegisterGuthiMemberTest extends MongoSpringBootTestSupport {
     @Autowired private MockMvc mockMvc;
 
     @Test
-    void registerGuthiMember_returnsToken() throws Exception {
+    void registerGuthiMember_isClosed() throws Exception {
         mockMvc.perform(
                         post("/api/auth/register-guthi-member")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -34,8 +34,7 @@ class AuthRegisterGuthiMemberTest extends MongoSpringBootTestSupport {
                                           "inviteCode": "test-invite-code"
                                         }
                                         """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
     }
 }

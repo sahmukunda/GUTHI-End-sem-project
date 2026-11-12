@@ -1,12 +1,10 @@
 package com.guthi.service;
 
-import com.guthi.config.GuthiMemberInviteProperties;
 import com.guthi.config.JwtConfig;
 import com.guthi.dto.request.LoginRequest;
 import com.guthi.dto.request.RegisterGuthiMemberRequest;
 import com.guthi.dto.request.RegisterRequest;
 import com.guthi.dto.response.AuthResponse;
-import com.guthi.enums.Role;
 import com.guthi.exception.BadRequestException;
 import com.guthi.model.User;
 import com.guthi.repository.UserRepository;
@@ -18,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -27,60 +24,25 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final GuthiMemberInviteProperties memberInviteProperties;
     private final AuthSessionService authSessionService;
     private final JwtConfig jwtConfig;
 
+    private static final String REGISTRATION_CLOSED =
+            "Self-registration is closed. A technician must add this account in the database before you can sign in.";
+
     @PostConstruct
-    void logMemberInviteConfig() {
-        log.info(
-                "Guthi member self-registration: enabled={}, invite code configured={}",
-                memberInviteProperties.isEnabled(),
-                memberInviteProperties.getCode() != null && !memberInviteProperties.getCode().isBlank());
+    void logRegistrationClosed() {
+        log.info("Account self-registration is closed. Sign-in only, for accounts already stored in users.");
     }
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
-            throw new BadRequestException("Email already registered");
-        }
-        User user =
-                User.builder()
-                        .fullName(request.getFullName())
-                        .email(request.getEmail().trim().toLowerCase())
-                        .password(passwordEncoder.encode(request.getPassword()))
-                        .mobileNumber(request.getMobileNumber())
-                        .role(Role.USER)
-                        .createdAt(Instant.now())
-                        .build();
-        userRepository.save(user);
-        return issueAuthResponse(user);
+        throw new BadRequestException(REGISTRATION_CLOSED);
     }
 
     public AuthResponse registerGuthiMember(RegisterGuthiMemberRequest request) {
-        if (!memberInviteProperties.isEnabled()) {
-            throw new BadRequestException("Guthi member self-registration is not enabled");
-        }
-        String expected = memberInviteProperties.getCode() == null ? "" : memberInviteProperties.getCode().trim();
-        if (expected.isEmpty() || !expected.equals(request.getInviteCode().trim())) {
-            throw new BadRequestException("Invalid invite code");
-        }
-        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
-            throw new BadRequestException("Email already registered");
-        }
-        User user =
-                User.builder()
-                        .fullName(request.getFullName())
-                        .email(request.getEmail().trim().toLowerCase())
-                        .password(passwordEncoder.encode(request.getPassword()))
-                        .mobileNumber(request.getMobileNumber())
-                        .role(Role.ADMIN)
-                        .createdAt(Instant.now())
-                        .build();
-        userRepository.save(user);
-        return issueAuthResponse(user);
+        throw new BadRequestException(REGISTRATION_CLOSED);
     }
 
     public AuthResponse login(LoginRequest request) {

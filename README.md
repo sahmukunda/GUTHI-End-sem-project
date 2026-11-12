@@ -64,7 +64,7 @@ Monorepo for a **Nepali Guthi–style community governance** demo: pooled donati
 - **Volunteer events**: admin creates events; members sign up; live volunteer lists over WebSocket.
 - **Work posts**: members post help offers; others accept.
 - **Festivals**: calendar-style listings, completion, reviews.
-- **Auth**: separate login flows for community (`/login/user`) and Guthi workspace (`/login/guthi`); registration pages under `/register/*`.
+- **Auth**: separate login flows for community (`/login/user`) and Guthi workspace (`/login/guthi`). There is no public registration. A technician inserts the account into the `users` collection before that person can sign in.
 
 ---
 
@@ -159,7 +159,6 @@ mvnw.cmd test -Dtest=ApiEndpointSmokeTest
 | Community home | `/u` |
 | Guthi workspace (admin UI) | `/guthi` |
 | Logins | `/login/user`, `/login/guthi` |
-| Registration | `/register/community`, `/register/guthi` |
 
 Legacy `/admin/*` redirects to `/guthi/*`.
 

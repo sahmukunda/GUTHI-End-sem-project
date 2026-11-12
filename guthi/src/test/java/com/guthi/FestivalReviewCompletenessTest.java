@@ -5,6 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.guthi.enums.Role;
+import com.guthi.repository.UserRepository;
+import com.guthi.support.IssuedAccounts;
 import com.guthi.support.MongoSpringBootTestSupport;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -24,6 +28,8 @@ class FestivalReviewCompletenessTest extends MongoSpringBootTestSupport {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     @Test
     void reviewRejectedUntilFestivalMarkedComplete() throws Exception {
@@ -32,20 +38,7 @@ class FestivalReviewCompletenessTest extends MongoSpringBootTestSupport {
         String userEmail = "fest-user-" + id + "@example.com";
         String password = "password123";
 
-        mockMvc.perform(
-                        post("/api/auth/register-guthi-member")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        """
-                                        {
-                                          "fullName": "Fest Admin",
-                                          "email": "%s",
-                                          "password": "%s",
-                                          "inviteCode": "test-invite-code"
-                                        }
-                                        """
-                                                .formatted(adminEmail, password)))
-                .andExpect(status().isOk());
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Fest Admin", adminEmail, password, Role.ADMIN);
 
         MvcResult adminLogin =
                 mockMvc.perform(
@@ -61,15 +54,7 @@ class FestivalReviewCompletenessTest extends MongoSpringBootTestSupport {
         String adminToken =
                 objectMapper.readTree(adminLogin.getResponse().getContentAsString()).get("token").asText();
 
-        mockMvc.perform(
-                        post("/api/auth/register")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        """
-                                        { "fullName": "Fest User", "email": "%s", "password": "%s" }
-                                        """
-                                                .formatted(userEmail, password)))
-                .andExpect(status().isOk());
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Fest User", userEmail, password, Role.USER);
 
         MvcResult userLogin =
                 mockMvc.perform(

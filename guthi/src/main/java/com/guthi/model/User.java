@@ -18,11 +18,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Document(collection = "users")
-@Getter
-@Setter
+@Getter  // ENCAPSULATION: Lombok generates controlled accessor methods instead of direct field access
+@Setter  // ENCAPSULATION: Lombok generates controlled mutator methods for data consistency
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// INHERITANCE: User is-a UserDetails for Spring Security integration (UserDetails contract)
 public class User implements UserDetails {
 
     @Id private String id;
@@ -32,6 +33,7 @@ public class User implements UserDetails {
     @Indexed(unique = true)
     private String email;
 
+    // ENCAPSULATION: @JsonIgnore prevents sensitive password from leaking in API responses
     @JsonIgnore private String password;
 
     private String mobileNumber;
@@ -40,11 +42,13 @@ public class User implements UserDetails {
 
     private Instant createdAt;
 
+    // INHERITANCE: @Override UserDetails contract method to provide role-based authorities for Spring Security
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
+    // INHERITANCE: @Override UserDetails contract method returning email as username for authentication
     @Override
     public String getUsername() {
         return email;

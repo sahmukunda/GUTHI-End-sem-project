@@ -6,8 +6,8 @@ export function LoginGate() {
       <h1 className="auth-page__title">Guthi Governance</h1>
       <div className="auth-page__divider" />
       <p className="auth-page__lede">
-        Choose who you are. Each path has its own sign-in and account creation. The same secure server
-        powers both; you are routed to the right workspace after authentication.
+        Choose who you are. Accounts are issued in advance, the same way a college issues a staff or
+        student email. There is no sign-up page. Sign in with the email and password stored for you.
       </p>
       <div className="choice-grid">
         <Link to="/login/user" className="choice-tile">
@@ -21,12 +21,6 @@ export function LoginGate() {
           <span className="choice-tile__cta">Sign in →</span>
         </Link>
       </div>
-      <p className="auth-page__foot">
-        New? Create an account for your path:{" "}
-        <Link to="/register/community">Community member</Link>
-        {" · "}
-        <Link to="/register/guthi">Guthi member</Link>
-      </p>
     </div>
   );
 }

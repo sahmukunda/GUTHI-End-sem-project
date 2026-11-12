@@ -5,6 +5,7 @@ import com.guthi.dto.response.AllocationDto;
 import com.guthi.dto.response.DonationClaimResponse;
 import com.guthi.dto.response.DonationPersonalBroadcast;
 import com.guthi.dto.response.DonationPoolBroadcast;
+import com.guthi.dto.response.ContributionReportResponse;
 import com.guthi.dto.response.DonationSummaryResponse;
 import com.guthi.enums.DonationClaimStatus;
 import com.guthi.enums.RequestStatus;
@@ -28,15 +29,19 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.bson.Document;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
+// COMPOSITION: @RequiredArgsConstructor (Lombok) auto-generates constructor for dependency injection
 @RequiredArgsConstructor
 public class DonationService {
 
@@ -49,6 +54,7 @@ public class DonationService {
                     new BigDecimal("4000"),
                     new BigDecimal("5000"));
 
+    // COMPOSITION: Service composes repositories and other services as immutable dependencies
     private final DonationRepository donationRepository;
     private final DonationAllocationRepository allocationRepository;
     private final MongoFinancialAggregations financialAggregations;
@@ -93,6 +99,7 @@ public class DonationService {
                 .toList();
     }
 
+    @Transactional
     public DonationClaimResponse approveClaim(String claimId, User admin) {
         DonationClaim claim =
                 donationClaimRepository
@@ -219,6 +226,79 @@ public class DonationService {
                 .myUsedFromPoolTotal(myUsedFromPool)
                 .myNetContribution(myNet)
                 .build();
+    }
+
+    public ContributionReportResponse contributionReport(String query) {
+        String needle = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        List<ContributionReportResponse.DonorTotal> donors =
+                financialAggregations.donationsJoinedToDonors().stream()
+                        .map(this::toDonorTotal)
+                        .filter(
+                                row ->
+                                        needle.isEmpty()
+                                                || contains(row.getDonorName(), needle)
+                                                || contains(row.getDonorEmail(), needle))
+                        .toList();
+        List<ContributionReportResponse.PurposeTotal> purposes =
+                financialAggregations.allocationsGroupedByPurpose().stream()
+                        .map(this::toPurposeTotal)
+                        .filter(row -> needle.isEmpty() || contains(row.getPurpose(), needle))
+                        .toList();
+        BigDecimal totalDonated = nz(financialAggregations.sumTotalDonated());
+        BigDecimal totalAllocated = nz(financialAggregations.sumTotalAllocated());
+        return ContributionReportResponse.builder()
+                .totalDonated(totalDonated)
+                .totalAllocated(totalAllocated)
+                .availablePool(totalDonated.subtract(totalAllocated))
+                .donors(donors)
+                .allocationsByPurpose(purposes)
+                .build();
+    }
+
+    private ContributionReportResponse.DonorTotal toDonorTotal(Document doc) {
+        return ContributionReportResponse.DonorTotal.builder()
+                .donorId(doc.get("_id") == null ? "" : doc.get("_id").toString())
+                .donorName(doc.getString("donorName") == null ? "Unknown member" : doc.getString("donorName"))
+                .donorEmail(doc.getString("donorEmail") == null ? "" : doc.getString("donorEmail"))
+                .totalAmount(toReportAmount(doc.get("totalAmount")))
+                .donationCount(toCount(doc.get("donationCount")))
+                .build();
+    }
+
+    private ContributionReportResponse.PurposeTotal toPurposeTotal(Document doc) {
+        Object id = doc.get("_id");
+        return ContributionReportResponse.PurposeTotal.builder()
+                .purpose(id == null ? "Unspecified" : id.toString())
+                .totalAmount(toReportAmount(doc.get("totalAmount")))
+                .allocationCount(toCount(doc.get("allocationCount")))
+                .build();
+    }
+
+    private static boolean contains(String value, String needle) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(needle);
+    }
+
+    private static BigDecimal toReportAmount(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof org.bson.types.Decimal128 decimal) {
+            return decimal.bigDecimalValue();
+        }
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        return new BigDecimal(value.toString());
+    }
+
+    private static int toCount(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return 0;
     }
 
     public BigDecimal getTotalAvailablePool() {

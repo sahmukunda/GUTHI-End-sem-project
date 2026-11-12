@@ -51,8 +51,8 @@ export function LoginPage({ portal }: { portal: Portal }) {
 
   const title = isCommunity ? "Community member sign-in" : "Guthi member sign-in";
   const blurb = isCommunity
-    ? "Use the email and password for your community account."
-    : "Use the email and password issued to trustees and operational Guthi members.";
+    ? "Sign in with the community email issued to you. New accounts are added in the database, not on this page."
+    : "Sign in with the Guthi member email issued to you. Trustees cannot create their own accounts.";
 
   return (
     <div className="auth-page auth-page--narrow">
@@ -87,14 +87,10 @@ export function LoginPage({ portal }: { portal: Portal }) {
       </form>
       {isCommunity ? (
         <p className="auth-page__foot">
-          <Link to="/register/community">Create community account</Link>
-          {" · "}
           <Link to="/login/guthi">I am a Guthi member</Link>
         </p>
       ) : (
         <p className="auth-page__foot">
-          <Link to="/register/guthi">Create Guthi member account</Link>
-          {" · "}
           <Link to="/login/user">I am a community member</Link>
         </p>
       )}

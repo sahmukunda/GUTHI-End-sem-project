@@ -17,12 +17,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 @RequiredArgsConstructor
+// INHERITANCE: JwtAuthenticationFilter is-a OncePerRequestFilter (extends base Spring Security filter hook)
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final AuthSessionService authSessionService;
 
+    // INHERITANCE: @Override OncePerRequestFilter contract method to inject JWT authentication per request
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,

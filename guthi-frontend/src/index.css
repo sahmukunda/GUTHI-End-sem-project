@@ -423,6 +423,48 @@ label {
   background: rgba(255, 255, 255, 0.02);
 }
 
+.data-table tbody tr.data-table__row--plan {
+  background: rgba(129, 199, 132, 0.1);
+}
+
+.roster {
+  margin-top: 0.35rem;
+  min-width: 11rem;
+}
+
+.roster__need {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.roster__group + .roster__group {
+  margin-top: 0.35rem;
+}
+
+.roster__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.roster__list {
+  margin: 0.15rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.roster__list li {
+  margin: 0.1rem 0;
+}
+
+.roster__empty {
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .data-table__cell--narrow {
   max-width: 180px;
   font-size: 0.82rem;

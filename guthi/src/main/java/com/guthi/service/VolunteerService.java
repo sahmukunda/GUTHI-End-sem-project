@@ -22,9 +22,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+// COMPOSITION: @RequiredArgsConstructor (Lombok) auto-generates constructor for dependency injection
 @RequiredArgsConstructor
 public class VolunteerService {
 
+    // COMPOSITION: Service composes repositories and publisher as immutable dependencies for delegation
     private final VolunteerEventRepository eventRepository;
     private final VolunteerSignupRepository signupRepository;
     private final UserRepository userRepository;
@@ -127,20 +129,20 @@ public class VolunteerService {
                 signupRepository.findByEventIdOrderBySignedUpAtAsc(eventId).stream()
                         .map(
                                 s -> {
-                                    User u =
-                                            userRepository
-                                                    .findById(s.getUserId())
-                                                    .orElseThrow(
-                                                            () ->
-                                                                    new ResourceNotFoundException(
-                                                                            "User not found"));
-                                    String displayName =
-                                            s.getParticipantName() != null && !s.getParticipantName().isBlank()
-                                                    ? s.getParticipantName()
-                                                    : u.getFullName();
+                                    String displayName = s.getParticipantName();
+                                    String mobile = s.getMobileNumber();
+                                    if (s.getUserId() != null) {
+                                        User user = userRepository.findById(s.getUserId()).orElse(null);
+                                        if (displayName == null || displayName.isBlank()) {
+                                            displayName = user == null ? "Member" : user.getFullName();
+                                        }
+                                        if ((mobile == null || mobile.isBlank()) && user != null) {
+                                            mobile = user.getMobileNumber();
+                                        }
+                                    }
                                     return VolunteerSignupAdminResponse.SignupRow.builder()
-                                            .participantName(displayName)
-                                            .mobileNumber(s.getMobileNumber())
+                                            .participantName(displayName == null || displayName.isBlank() ? "Member" : displayName)
+                                            .mobileNumber(mobile == null || mobile.isBlank() ? "—" : mobile)
                                             .signedUpAt(s.getSignedUpAt())
                                             .build();
                                 })

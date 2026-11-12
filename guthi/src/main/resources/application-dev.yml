@@ -1,7 +1,7 @@
 spring:
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/guthi}
+      uri: ${MONGODB_URI:mongodb://localhost:27018/guthi?replicaSet=rs0}
       auto-index-creation: true
 
 guthi:

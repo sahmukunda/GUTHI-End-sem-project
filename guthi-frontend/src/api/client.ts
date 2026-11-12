@@ -95,6 +95,7 @@ function resolveRequestCache(path: string, init: RequestInit): RequestCache {
   if (
     path === "/api/donations/summary" ||
     path === "/api/requests/my" ||
+    path === "/api/requests/volunteer-calls" ||
     path === "/api/requests/all" ||
     path === "/api/admin/donation-claims"
   ) {

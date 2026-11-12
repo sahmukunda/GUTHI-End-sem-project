@@ -105,6 +105,9 @@ export function AdminFestivalsPage() {
   }
 
   async function markComplete(id: string) {
+    if (!window.confirm("Mark this festival complete? Members will then be able to leave reviews.")) {
+      return;
+    }
     setErr("");
     setMsg("");
     try {

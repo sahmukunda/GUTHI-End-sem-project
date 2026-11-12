@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.guthi.enums.Role;
+import com.guthi.repository.UserRepository;
+import com.guthi.support.IssuedAccounts;
 import com.guthi.support.MongoSpringBootTestSupport;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -26,6 +30,8 @@ class DonationClaimFlowTest extends MongoSpringBootTestSupport {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     @Test
     void submitClaimThenAdminApprove_updatesMemberSummary() throws Exception {
@@ -35,19 +41,7 @@ class DonationClaimFlowTest extends MongoSpringBootTestSupport {
         String password = "password123";
         String txnId = String.format("%012d", Math.abs(UUID.randomUUID().getMostSignificantBits()) % 1_000_000_000_000L);
 
-        mockMvc.perform(
-                        post("/api/auth/register")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        """
-                                        {
-                                          "fullName": "Pool Donor",
-                                          "email": "%s",
-                                          "password": "%s"
-                                        }
-                                        """
-                                                .formatted(userEmail, password)))
-                .andExpect(status().isOk());
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Pool Donor", userEmail, password, Role.USER);
 
         MvcResult userLogin =
                 mockMvc.perform(
@@ -81,20 +75,7 @@ class DonationClaimFlowTest extends MongoSpringBootTestSupport {
                 .andExpect(jsonPath("$.myPendingClaimsTotal").value(1000))
                 .andExpect(jsonPath("$.myContributionsTotal").value(0));
 
-        mockMvc.perform(
-                        post("/api/auth/register-guthi-member")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        """
-                                        {
-                                          "fullName": "Trustee Claim Test",
-                                          "email": "%s",
-                                          "password": "%s",
-                                          "inviteCode": "test-invite-code"
-                                        }
-                                        """
-                                                .formatted(adminEmail, password)))
-                .andExpect(status().isOk());
+        IssuedAccounts.issue(userRepository, passwordEncoder, "Trustee Claim Test", adminEmail, password, Role.ADMIN);
 
         MvcResult adminLogin =
                 mockMvc.perform(
