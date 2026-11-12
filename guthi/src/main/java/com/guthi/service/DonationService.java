@@ -15,6 +15,7 @@ import com.guthi.exception.ResourceNotFoundException;
 import com.guthi.live.LiveUpdatePublisher;
 import com.guthi.model.CommunityRequest;
 import com.guthi.model.Donation;
+import com.guthi.model.DonationAllocation;
 import com.guthi.model.DonationClaim;
 import com.guthi.model.User;
 import com.guthi.repository.DonationAllocationRepository;
@@ -26,6 +27,7 @@ import com.guthi.repository.UserRepository;
 import com.guthi.security.SecurityUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -306,9 +308,10 @@ public class DonationService {
     }
 
     /**
-     * Dev-only: insert one verified donation and one approved fund request for the signed-in user so
-     * the home summary is non-zero (covers self-registered accounts that never ran full demo seed).
+     * Dev-only: insert one verified donation, one approved fund request, and the matching pool
+     * allocation for the signed-in user so the home summary is non-zero and the pool totals agree.
      */
+    @Transactional
     public void seedDevWalletForCurrentUser() {
         User user = SecurityUtils.requireCurrentUser();
         if (donationRepository.existsByDonorIdAndNote(user.getId(), DEV_WALLET_MARKER)) {
@@ -322,16 +325,24 @@ public class DonationService {
                         .note(DEV_WALLET_MARKER)
                         .donatedAt(now)
                         .build());
+        BigDecimal sampleUsed = new BigDecimal("3500");
         requestRepository.save(
                 CommunityRequest.builder()
                         .requesterId(user.getId())
                         .type(RequestType.RITUAL_HELP_FUND)
                         .description("Demo: approved ritual fund request (dev sample).")
-                        .fundAmountRequested(new BigDecimal("3500"))
+                        .fundAmountRequested(sampleUsed)
                         .status(RequestStatus.APPROVED)
                         .adminNote("Auto-approved (dev sample wallet).")
                         .createdAt(now.minus(2, ChronoUnit.DAYS))
                         .resolvedAt(now.minus(1, ChronoUnit.DAYS))
+                        .build());
+        allocationRepository.save(
+                DonationAllocation.builder()
+                        .purpose("Demo: approved ritual fund request (dev sample).")
+                        .amountUsed(sampleUsed)
+                        .allocatedAt(LocalDateTime.now())
+                        .approvedById(user.getId())
                         .build());
         DonationPoolBroadcast poolSnap = getPoolBroadcast();
         DonationPersonalBroadcast personal = getPersonalBroadcastForUser(user);

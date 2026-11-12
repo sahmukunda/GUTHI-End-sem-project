@@ -39,7 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +51,13 @@ public class RequestService {
     private final DonationService donationService;
     private final LiveUpdatePublisher liveUpdatePublisher;
     private final RequestVolunteerService volunteerService;
+    private final TransactionTemplate transactionTemplate;
+
+    /**
+     * Held around approve and reject until the Mongo transaction has committed. Two admins can
+     * otherwise both read the same pool balance or the same free land dates and both succeed.
+     */
+    private final Object approvalLock = new Object();
 
     public CommunityRequestResponse create(CreateCommunityRequestDto dto) {
         User requester = SecurityUtils.requireCurrentUser();
@@ -251,8 +258,13 @@ public class RequestService {
                 .toList();
     }
 
-    @Transactional
     public CommunityRequestResponse approve(String id, AdminDecisionRequest body, User admin) {
+        synchronized (approvalLock) {
+            return transactionTemplate.execute(status -> approveWithinTransaction(id, body, admin));
+        }
+    }
+
+    private CommunityRequestResponse approveWithinTransaction(String id, AdminDecisionRequest body, User admin) {
         CommunityRequest req =
                 requestRepository
                         .findById(id)
@@ -309,6 +321,12 @@ public class RequestService {
     }
 
     public CommunityRequestResponse reject(String id, AdminDecisionRequest body) {
+        synchronized (approvalLock) {
+            return rejectWithinLock(id, body);
+        }
+    }
+
+    private CommunityRequestResponse rejectWithinLock(String id, AdminDecisionRequest body) {
         CommunityRequest req =
                 requestRepository
                         .findById(id)
@@ -332,6 +350,11 @@ public class RequestService {
                     liveUpdatePublisher.publishUserRequestsMy(requester.getEmail(), mySnap);
                 });
         return toResponse(req);
+    }
+
+    /** Admin request list, including volunteer roster, after a member accepts or declines a call. */
+    public void publishAdminRequestList() {
+        liveUpdatePublisher.publishAdminRequests(listAllForAdmin());
     }
 
     private List<CommunityRequestResponse> requestsForUser(User user) {

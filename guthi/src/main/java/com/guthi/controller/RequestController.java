@@ -73,6 +73,7 @@ public class RequestController {
 
     private void livePublish(List<String> userIds) {
         volunteerService.publishForUsers(userIds);
+        requestService.publishAdminRequestList();
     }
 
     /** Admin-only list; path must stay distinct from {@code GET /my} (member list). */
